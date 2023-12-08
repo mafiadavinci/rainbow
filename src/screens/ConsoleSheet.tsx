@@ -1,4 +1,6 @@
 /* eslint-disable no-nested-ternary */
+import c from 'chroma-js';
+import { AnimatePresence, MotiView } from 'moti';
 import React, {
   createContext,
   useCallback,
@@ -21,7 +23,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { AnimatePresence } from '@/components/animations/AnimatePresence';
 import ButtonPressAnimation from '@/components/animations/ButtonPressAnimation';
 import {
   Bleed,
@@ -35,18 +36,43 @@ import {
 } from '@/design-system';
 import { alignHorizontalToFlexAlign } from '@/design-system/layout/alignment';
 import { IS_DEV } from '@/env';
-import { useDimensions } from '@/hooks';
+import {
+  useAccountAccentColor,
+  useAccountProfile,
+  useDimensions,
+} from '@/hooks';
 import { fonts } from '@/styles';
 import { useTheme } from '@/theme';
 import { safeAreaInsetValues } from '@/utils';
+import {
+  abbreviateEnsForDisplay,
+  formatAddressForDisplay,
+} from '@/utils/abbreviations';
 import { HapticFeedbackType } from '@/utils/haptics';
 
 const SCREEN_BOTTOM_INSET = safeAreaInsetValues.bottom + 20;
 const CHARACTER_WIDTH = 9.2725;
 
 export const ConsoleSheet = () => {
+  const { accentColor: accountColor } = useAccountAccentColor();
+
   const [didConfirmOwnership, setDidConfirmOwnership] = useState(false);
   const [showSignInButton, setShowSignInButton] = useState(false);
+
+  const accentColor = useMemo(() => {
+    if (c.contrast(accountColor, '#191A1C') < 2.125) {
+      const brightenedColor = c(accountColor).brighten(1).saturate(0.5).css();
+      return {
+        text: brightenedColor,
+        shadow: c(brightenedColor).alpha(0.8).css(),
+      };
+    } else {
+      return {
+        text: accountColor,
+        shadow: c(accountColor).alpha(0.8).css(),
+      };
+    }
+  }, [accountColor]);
 
   useEffect(() => {
     if (IS_DEV) {
@@ -77,19 +103,38 @@ export const ConsoleSheet = () => {
             width={{ custom: 36 }}
           />
           <ClaimRetroactivePointsFlow
+            accentColor={accentColor}
             didConfirmOwnership={didConfirmOwnership}
             setShowSignInButton={setShowSignInButton}
           />
         </Animated.View>
       </Box>
-      <AnimatePresence
-        condition={showSignInButton && !didConfirmOwnership}
-        duration={300}
-      >
-        <NeonButton
-          label="􀎽 Sign In"
-          onPress={() => setTimeout(() => setDidConfirmOwnership(true), 1000)}
-        />
+      {/* duration 300 */}
+      <AnimatePresence>
+        {showSignInButton && !didConfirmOwnership && (
+          <MotiView
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            exitTransition={{
+              duration: 125,
+              easing: Easing.bezier(0.3, 0, 1, 1),
+              type: 'timing',
+            }}
+            from={{ opacity: 0 }}
+            transition={{
+              duration: 300,
+              easing: Easing.bezier(0.2, 0, 0, 1),
+              type: 'timing',
+            }}
+          >
+            <NeonButton
+              label="􀎽 Sign In"
+              onPress={() =>
+                setTimeout(() => setDidConfirmOwnership(true), 1000)
+              }
+            />
+          </MotiView>
+        )}
       </AnimatePresence>
     </Inset>
   );
@@ -162,17 +207,29 @@ const NeonButton = ({
 };
 
 const ClaimRetroactivePointsFlow = ({
+  accentColor,
   didConfirmOwnership,
   onComplete,
   setShowSignInButton,
 }: {
+  accentColor: { text: string; shadow: string };
   didConfirmOwnership: boolean;
   onComplete?: () => void;
   setShowSignInButton: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
+  const { accountAddress, accountENS } = useAccountProfile();
+
   const [animationKey, setAnimationKey] = useState(0);
   const [animationPhase, setAnimationPhase] = useState(0);
   const [isCalculationComplete, setIsCalculationComplete] = useState(false);
+
+  const accountName = useMemo(() => {
+    if (accountENS) {
+      return abbreviateEnsForDisplay(accountENS);
+    } else if (accountAddress) {
+      return formatAddressForDisplay(accountAddress, 4, 6);
+    }
+  }, [accountAddress, accountENS]);
 
   useEffect(() => {
     if (IS_DEV) {
@@ -195,10 +252,10 @@ const ClaimRetroactivePointsFlow = ({
                 weight="normal"
               />
               <AnimatedText
-                color={textColors.account}
+                color={accentColor}
                 enableHapticTyping
                 delayStart={300}
-                textContent="0xtester.eth"
+                textContent={accountName || ''}
               />
             </Line>
             <AnimatedText
@@ -293,9 +350,9 @@ const ClaimRetroactivePointsFlow = ({
                 weight="normal"
               />
               <AnimatedText
-                color={textColors.account}
+                color={accentColor}
                 skipAnimation
-                textContent="0xtester.eth"
+                textContent={accountName || ''}
               />
             </Line>
             <Line gap={0}>
@@ -832,7 +889,6 @@ const rainbowColors = {
 };
 
 const textColors = {
-  account: { text: '#FEC101', shadow: 'rgba(254, 193, 1, 0.8)' },
   gray: { text: '#94969B', shadow: 'rgba(148, 150, 155, 0.8)' },
   green: { text: '#3ECF5B', shadow: 'rgba(62, 207, 91, 0.8)' },
   white: { text: '#FFFFFF', shadow: 'rgba(255, 255, 255, 0.8)' },

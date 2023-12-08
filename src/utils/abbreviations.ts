@@ -13,7 +13,7 @@ export function address(
   return [
     currentAddress.substring(0, firstSectionLength || truncationLength),
     currentAddress.substring(currentAddress.length - truncationLength),
-  ].join('...');
+  ].join('…');
 }
 
 export function formatAddressForDisplay(
@@ -38,7 +38,7 @@ export function abbreviateEnsForDisplay(
   if (pieces[0].length > truncationLength + truncationLengthBuffer) {
     return [
       pieces[0].slice(0, truncationLength - 4),
-      '...',
+      '…',
       pieces[0].slice(-4),
       `.${pieces[1]}`,
     ].join('');
@@ -50,7 +50,8 @@ export function abbreviateEnsForDisplay(
 export function isAddress(currentAddress: string): boolean {
   return (
     (currentAddress || '').substring(0, 2) === '0x' &&
-    (currentAddress || '').indexOf('...') > -1
+    ((currentAddress || '').indexOf('...') > -1 ||
+      (currentAddress || '').indexOf('…') > -1)
   );
 }
 
