@@ -184,9 +184,8 @@ export default function WalletConnectApprovalSheet() {
 
   const { dappName, dappUrl, dappScheme, imageUrl, peerId } = meta;
 
-  const verifiedData = params?.verifiedData;
   const { data: metadata } = useDappMetadata({
-    url: verifiedData?.verifyUrl || dappUrl,
+    url: dappUrl,
   });
 
   const isScam = metadata?.status === DAppStatus.Scam;

@@ -916,9 +916,7 @@ export async function onAuthRequest(event: Web3WalletTypes.AuthRequest) {
   };
 
   // need to prefetch dapp metadata since portal is static
-  const url =
-    // @ts-ignore Web3WalletTypes.AuthRequest type is missing VerifyContext
-    event?.verifyContext?.verifyUrl || event.params.requester.metadata.url;
+  const url = event.params.requester.metadata.url;
   const metadata = await fetchDappMetadata({ url, status: true });
 
   const isScam = metadata.status === DAppStatus.Scam;
